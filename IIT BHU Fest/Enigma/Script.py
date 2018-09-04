@@ -53,6 +53,7 @@ def transformExplanatoryVariables(data):
     data["Reputation"] = np.log(data["Reputation"] + 1)
     data["Answers"] = np.log(data["Answers"] + 1)
     data["Views"] = np.log(data["Views"] + 1)
+    #data["Views_Ratio"] = data["Views"] * data["Reputation"]
     return data
 
 def convertCategoricalVaribalesToNumEncoding(data):
@@ -61,6 +62,7 @@ def convertCategoricalVaribalesToNumEncoding(data):
 
 
 dataset = readData()
+#dataset["Views_Rep_Intr"] = dataset["Views"] * dataset["Reputation"]
 dataset = transformExplanatoryVariables(dataset)
 #dataset = generateAggregates(dataset)
 dataset = convertCategoricalVaribalesToNumEncoding(dataset)
@@ -118,7 +120,7 @@ sns.distplot(np.log(train["Upvotes"] + 1))
 """
 imp.reload(Models)
 
-model,results,resid = Models.LassoModel(train,test,degree = 5)
+model,results,resid = Models.lightGBMModel(train,test,degree = 2,ISPOLY= True)
 
 results = (np.exp(results) - 1).round().astype(int)
 results = pd.DataFrame({"ID":test_Ids,"Upvotes":results[:,0]})

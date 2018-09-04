@@ -154,7 +154,8 @@ def lightGBMModel(train,test,splits = 10, degree = 2, ISPOLY = True):
                 )
         
         result = gbm.predict(X_test)
-        rmse = math.sqrt(np.sum((result - Y_test) **2)/ X_train.shape[0])
+        #pdb.set_trace()
+        rmse = math.sqrt(np.sum((result - Y_test[:,0]) **2)/ X_train.shape[0])
         rmse_tmp += rmse
         
         r2 = r2_score(Y_test,result)
@@ -173,6 +174,6 @@ def lightGBMModel(train,test,splits = 10, degree = 2, ISPOLY = True):
                 num_boost_round=10
                 )
     result = gbm.predict(test_x)
-    resid = gbm.predict(train_x) - train_y
+    resid = gbm.predict(train_x) - train_y[:,0]
 
     return gbm,result,resid    

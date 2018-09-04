@@ -1,0 +1,50 @@
+# Configure Kafka to advertise IP addresses instead of FQDN
+IP_ADDRESS=$(hostname -i)
+echo advertised.listeners=$IP_ADDRESS
+sed -i.bak -e '/advertised/{/advertised@/!d;}' /usr/hdp/current/kafka-broker/conf/server.properties
+echo "advertised.listeners=PLAINTEXT://$IP_ADDRESS:9092" >> /usr/hdp/current/kafka-broker/conf/server.properties
+
+PLAINTEXT://0.0.0.0:9092
+
+log.retention.hours: 960 (The number of hours to keep a log file before deleting it (in hours))
+auto-topic enable: true
+offsets.retention.minutes: 86400000 (Offsets older than this retention period will be discarded)
+offsets.topic.segment.bytes: 1048576000 (The offsets topic segment bytes should be kept relatively small in order to facilitate faster log compaction and cache loads)
+
+sshuser@kafka-sidkafkacluster-ssh.azurehdinsight.net
+sshuser@sidsparkcluster-ssh.azurehdinsight.net
+
+read -p "Enter the Kafka on HDInsight cluster name: " CLUSTERNAME
+
+sudo apt -y install jq
+
+export KAFKAZKHOSTS=`curl -sS -u admin -G http://headnodehost:8080/api/v1/clusters/$CLUSTERNAME/services/ZOOKEEPER/components/ZOOKEEPER_SERVER | jq -r '["\(.host_components[].HostRoles.host_name):2181"] | join(",")' | cut -d',' -f1,2`
+
+export KAFKABROKERS=`curl -sS -u admin -G http://headnodehost:8080/api/v1/clusters/$CLUSTERNAME/services/KAFKA/components/KAFKA_BROKER | jq -r '["\(.host_components[].HostRoles.host_name):9092"] | join(",")' | cut -d',' -f1,2`
+
+------List topics
+/usr/hdp/current/kafka-broker/bin/kafka-topics.sh --list --zookeeper $KAFKAZKHOSTS
+------------
+Delete topics
+
+/usr/hdp/current/kafka-broker/bin/kafka-topics.sh --delete --topic rawevents --zookeeper $KAFKAZKHOSTS
+---------
+/usr/hdp/current/kafka-broker/bin/kafka-console-consumer.sh --bootstrap-server $KAFKABROKERS --topic rawevents --from-beginning
+
+/usr/hdp/current/kafka-broker/bin/kafka-console-consumer.sh --bootstrap-server $KAFKABROKERS --topic streamPerHourPerDay --from-beginning
+
+/usr/hdp/current/kafka-broker/bin/kafka-console-consumer.sh --bootstrap-server $KAFKABROKERS --topic tmpstreamquery --from-beginning
+
+/usr/hdp/current/kafka-broker/bin/kafka-console-consumer.sh --bootstrap-server $KAFKABROKERS --topic streamPerHour --from-beginning
+
+----------Consumer groups 
+
+/usr/hdp/current/kafka-broker/bin/kafka-consumer-groups.sh --describe --bootstrap-server $KAFKABROKERS --group "spark-kafka-source-61b0713a-0df0-44d2-a922-fdd485e406d2--841966193-driver-0"
+
+/usr/hdp/current/kafka-broker/bin/kafka-consumer-groups.sh --describe --zookeeper $KAFKAZKHOSTS --group "spark-kafka-source-0dc54142-0c4f-43ec-adfd-7843f6b256cf--864095594-driver-0"
+
+/usr/hdp/current/kafka-broker/bin/kafka-consumer-groups.sh --bootstrap-server $KAFKABROKERS --list
+/usr/hdp/current/kafka-broker/bin/kafka-consumer-groups.sh --list --zookeeper $KAFKAZKHOSTS
+
+
+

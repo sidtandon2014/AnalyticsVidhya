@@ -1,0 +1,73 @@
+var streamPerHourPerDay = spark.readStream.format("kafka").
+option("kafka.bootstrap.servers", kafkaBrokers).
+option("subscribe", kafkaTopic).
+option("startingOffsets","earliest").
+load().
+selectExpr("CAST(key AS STRING) AS key","CAST(value AS STRING) AS value").as[(String,String)].
+select(from_json(col("value"), schema).alias("consumption")).
+select("consumption.*").
+selectExpr(
+    "house_id",
+    "household_id",
+    "cast(cast(timestamp as int) as timestamp) as timestamp",
+    "cast(value as double) as value",
+    "hour(from_unixtime(timestamp)) as Lasthour",
+    "from_unixtime(timestamp) as FullDateTime",
+    "cast(from_unixtime(timestamp) as date) as Date"
+).
+withColumn("Id",concat(col("house_id"),lit("_"),col("household_id"),lit("_"),col("Date"),lit("_"),col("Lasthour"))).
+withWatermark("timestamp","2 minute").
+dropDuplicates("Id").
+writeStream.
+format("csv").
+option("path","/example/csvdata").
+option("checkpointLocation", "/path/chkpoint1").
+outputMode("append").
+start()                            
+
+
+------------
+var streamPerHour = commonDF.
+groupBy(
+    window($"timestamp", "1 hour", "1 hour"),
+    col("house_id"),col("household_id"),col("Lasthour")
+).
+agg(
+    mean("value").as("MeanConsumptionForThatHour")
+    ,stddev_pop("value").as("SDConsumptionForThatHour")
+).
+withColumn(
+    "1SDConsumption"
+    ,col("MeanConsumptionForThatHour") + col("SDConsumptionForThatHour")
+).
+withColumn("Id",concat(col("house_id"),lit("_"),col("household_id"),lit("_"),col("Lasthour"))).
+selectExpr("cast(Id as string) as key","to_json(struct(*)) AS value").as[(String,String)].
+writeStream.
+format("kafka").
+option("kafka.bootstrap.servers", kafkaBrokers).
+option("checkpointLocation", "/path/checkpointstreamPerHour").
+option("topic", "streamPerHour").
+option("failOnDataLoss","false").
+outputMode("append").
+start()
+
+--------------------
+
+
+var streamPerHourPerDay = commonDF.
+groupBy(
+    window($"timestamp", "1 hour", "1 hour"),
+    col("house_id"),col("household_id"),col("Date"),col("Lasthour"),col("Id")
+).
+agg(
+    sum("value").as("TotalConsumptionForThatHourAndDay")
+).
+selectExpr("cast(Id as string) as key","to_json(struct(*)) AS value").as[(String,String)].
+writeStream.
+format("kafka").
+option("kafka.bootstrap.servers", kafkaBrokers).
+option("checkpointLocation", "/path/checkpointstreamPerHourPerDay").
+option("topic", "streamPerHourPerDay").
+option("failOnDataLoss","false").
+outputMode("append").
+start()
