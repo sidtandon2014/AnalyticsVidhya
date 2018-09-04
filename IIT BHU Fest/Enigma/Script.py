@@ -120,7 +120,7 @@ sns.distplot(np.log(train["Upvotes"] + 1))
 """
 imp.reload(Models)
 
-model,results,resid = Models.lightGBMModel(train,test,degree = 2,ISPOLY= True)
+model,results,resid = Models.XGBRegressorModel(train,test,degree = 2,ISPOLY= True)
 
 results = (np.exp(results) - 1).round().astype(int)
 results = pd.DataFrame({"ID":test_Ids,"Upvotes":results[:,0]})

@@ -177,3 +177,38 @@ def lightGBMModel(train,test,splits = 10, degree = 2, ISPOLY = True):
     resid = gbm.predict(train_x) - train_y[:,0]
 
     return gbm,result,resid    
+
+def XGBRegressorModel(train,test,splits = 10, degree = 2, ISPOLY = True):
+    import xgboost as xgb
+    from sklearn.preprocessing import PolynomialFeatures
+    from sklearn.model_selection import KFold
+    from sklearn.metrics import r2_score
+    
+    train_x = np.array(train[train.columns[train.columns != "Upvotes"]])
+    train_y = np.array(train[train.columns[train.columns == "Upvotes"]])
+    test_x = np.array(test)
+    #pdb.set_trace()
+    
+    #--------------Implement polynomial model
+    if ISPOLY:
+        polyModel = PolynomialFeatures(degree=degree)
+        train_x = polyModel.fit_transform(train_x)
+        test_x = polyModel.transform(test_x)
+    
+    model_xgb = xgb.XGBRegressor(
+                             learning_rate=0.05, max_depth=4, 
+                            n_estimators=150, seed = 1894,
+                              nthread = -1)
+
+    model_xgb.fit(train_x, train_y)
+    print(model_xgb.score(train_x, train_y))
+        
+    #print("Mean squared error: %.2f" % rmse)
+    #print("Mean squared error calcu: %.2f" % rmse)
+    #print('Variance score: %.2f' % r2)
+    gc.collect()
+        
+    result = model_xgb.predict(test_x)
+    resid = model_xgb.predict(train_x) - train_y[:,0]
+
+    return model_xgb,result,resid    
