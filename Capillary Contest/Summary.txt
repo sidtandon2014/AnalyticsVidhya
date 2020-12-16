@@ -1,0 +1,11 @@
+Recommend best suited items from the inventory to a user in order to improve his/her shopping experience
+
+Recommend the ranked top 10 items for a user
+
+data from april to october
+
+
+
+Total training data: 132551
+Total USers: 27778
+	- USerId: 26784 did 32% of transactions

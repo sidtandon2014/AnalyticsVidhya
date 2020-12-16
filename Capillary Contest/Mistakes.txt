@@ -1,0 +1,5 @@
+1. Didnt use Encode Decoders
+2. Didnt use Profile MAtrix
+3. Attribute Value as feature value for product category
+4. Didnt define the loss function for recommendation
+5. Should have generated user profile matrix using SVD or ALS (Need to see how can i do that)
